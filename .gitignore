@@ -1,0 +1,39 @@
+# Base de datos SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Archivos de distribución
+dist/
+build/
+*.egg-info/
+
+# Entorno virtual
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos temporales
+*.tmp
+*.temp
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Archivos de configuración local
+.env
+.env.local
