@@ -1,156 +1,135 @@
-# 🕷️ Web Scraper con Python
+# Web News - Scraping con Flask, SQLite y BeautifulSoup
 
-Proyecto de web scraping con **BeautifulSoup**, **Requests** y **SQLite**.
+Proyecto académico para extraer noticias, guardarlas en SQLite y visualizarlas desde una interfaz web con Flask.
 
-## 📦 Instalación
+## Que hace este proyecto
+
+- Extrae noticias desde Diario Sur.
+- Guarda noticias en SQLite evitando duplicados por enlace.
+- Muestra los datos en una vista web moderna.
+- Permite lanzar el scraping desde la web con un boton.
+- Incluye un flujo por consola para pruebas rapidas.
+
+## Tecnologias
+
+- Python
+- Flask
+- Requests
+- BeautifulSoup4
+- SQLite
+- Bootstrap 5
+- FPDF (script auxiliar para generar PDF)
+
+## Estructura del proyecto
+
+```text
+Scraping Web News/
+|- app.py                 # App Flask (interfaz web)
+|- main.py                # Ejecucion por consola
+|- scraper.py             # Logica de scraping
+|- database.py            # Acceso y gestion de SQLite
+|- generar_pdf.py         # Script auxiliar para crear PDF descriptivo
+|- requirements.txt       # Dependencias
+|- templates/
+|  |- index.html          # Vista principal
+|- static/
+|  |- img/
+|     |- logo.png
+|- noticias.db            # Se crea automaticamente al ejecutar
+`- README.md
+```
+
+## Instalacion
+
+1. Clona el repositorio.
+2. Entra en la carpeta del proyecto.
+3. Instala dependencias:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 📁 Estructura del Proyecto
+Nota: si no tienes Flask o FPDF instalados en tu entorno, instalalos con:
 
-```
-Scraping Web News/
-├── requirements.txt      # Dependencias del proyecto
-├── database.py          # Gestor de base de datos SQLite
-├── scraper.py           # Clase para hacer scraping
-├── main.py              # Script principal
-├── noticias.db          # Base de datos (se crea automáticamente)
-└── README.md            # Este archivo
+```bash
+pip install flask fpdf2
 ```
 
-## 🚀 Uso
+## Ejecucion
 
-### Opción 1: Ejecutar el script principal (Diario Sur)
+### Opcion A: interfaz web (recomendada)
+
+```bash
+python app.py
+```
+
+Despues abre en el navegador:
+
+```text
+http://127.0.0.1:5000/
+```
+
+Desde la interfaz puedes:
+
+- Ver el total de noticias guardadas.
+- Consultar las ultimas noticias.
+- Pulsar Actualizar scraping para extraer nuevas noticias.
+
+### Opcion B: script por consola
 
 ```bash
 python main.py
 ```
 
-Este comando extrae automáticamente **5 noticias** de Diario Sur con:
-- ✅ Título de la noticia
-- ✅ Autor (cuando está disponible)
-- ✅ Descripción breve
-- ✅ Enlace completo
-- ✅ Fecha de publicación (si está disponible)
-- ✅ Fecha de scraping
+Muestra por terminal el resultado del scraping y estadisticas de la base de datos.
 
-### Opción 2: Usar en tu propio script
+## Endpoints de Flask
 
-```python
-from scraper import WebScraper
-from database import DatabaseManager
+- GET /: pagina principal con las noticias.
+- POST /actualizar: ejecuta scraping y redirige al inicio.
+- GET /actualizar: redirige al inicio para evitar error 405 al refrescar.
 
-# Inicializar
-db = DatabaseManager('noticias.db')
-scraper = WebScraper(db)
+## Base de datos
 
-# Scrapear 5 noticias de Diario Sur
-scraper.extraer_noticias_diariosur()
+Tabla principal: noticias
 
-# Ver noticias
-noticias = db.obtener_noticias(5)
-for noticia in noticias:
-    print(f"Título: {noticia['titulo']}")
-    # La descripción contiene "AUTOR|||DESCRIPCION"
-    info = noticia['descripcion'].split('|||')
-    autor = info[0] if len(info) > 0 else 'Sin autor'
-    descripcion = info[1] if len(info) > 1 else ''
-    print(f"Autor: {autor}")
-    print(f"Descripción: {descripcion}")
+- id
+- titulo
+- descripcion
+- enlace (UNIQUE)
+- fecha_publicacion
+- fecha_scraping
+
+Formato de descripcion para Diario Sur:
+
+```text
+AUTOR|||DESCRIPCION
 ```
 
-## 🔍 Cómo Scrapear Otros Sitios
+La app web separa ese campo para mostrar autor y descripcion limpia.
 
-### Pasos:
+## Personalizar scraping para otro sitio
 
-1. **Inspecciona el sitio web**: Abre el sitio en navegador y presiona `F12` (Herramientas de Desarrollo)
-
-2. **Identifica los selectores CSS**:
-   - Right-click en el elemento → "Inspeccionar"
-   - Busca los selectores CSS para:
-     - Contenedor del artículo
-     - Título
-     - Enlace
-     - Descripción
-
-3. **Usa el scraper personalizado**:
+Puedes usar el metodo extraer_noticias_personalizado(url, selectores) con selectores CSS:
 
 ```python
 selectores = {
-    'contenedor': '.article',        # Selector de cada artículo
-    'titulo': '.headline',           # Selector del título
-    'enlace': 'a.article-link',     # Selector del enlace
-    'descripcion': '.summary'        # Selector de descripción
-}
-
-scraper.extraer_noticias_personalizado(
-    'https://ejemplo.com/noticias',
-    selectores
-)
-```
-
-## 📚 Componentes Principales
-
-### DatabaseManager
-- `crear_tabla()`: Crea la tabla en SQLite
-- `insertar_noticia()`: Guarda una noticia
-- `obtener_noticias()`: Recupera noticias
-- `contar_noticias()`: Cuenta total de noticias
-
-### WebScraper
-- `obtener_html()`: Descarga contenido HTML
-- `parsear_html()`: Parsea con BeautifulSoup
-- `extraer_noticias_diariosur()`: **Nuevo** - Extrae 5 noticias de Diario Sur con autor y fecha
-- `extraer_noticias_bbc()`: Ejemplo con BBC News
-- `extraer_noticias_personalizado()`: Para cualquier sitio con selectores CSS
-
-## ⚙️ Configuración
-
-### Headers HTTP
-```python
-self.headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    "contenedor": ".article",
+    "titulo": "h2",
+    "enlace": "a",
+    "descripcion": "p"
 }
 ```
 
-### Delays
-```python
-time.sleep(0.5)  # Pausa entre requests para no sobrecargar servidores
-```
+## Troubleshooting rapido
 
-## 🛡️ Consideraciones Éticas
+- Error 405 al refrescar: solucionado en la ruta /actualizar (ahora acepta GET y redirige).
+- No encuentra noticias: revisa selectores y posibles cambios en el HTML del sitio.
+- Timeout de red: comprueba conexion y vuelve a intentar.
+- Modulo no encontrado: reinstala dependencias con requirements.txt.
 
-- ✅ Respeta el archivo `robots.txt` del sitio
-- ✅ No hagas demasiadas requests por segundo
-- ✅ Verifica los términos de servicio del sitio
-- ✅ Usa User-Agent adecuado
-- ✅ Identifícate si el sitio lo requiere
+## Consideraciones
 
-## 🐛 Troubleshooting
-
-### Error: "ModuleNotFoundError: No module named 'bs4'"
-```bash
-pip install beautifulsoup4
-```
-
-### Error: "Connection timeout"
-- Incrementa el delay entre requests
-- Verifica tu conexión a internet
-
-### No se encuentran elementos
-- Recarga el sitio y revisa los selectores CSS
-- Algunos sitios usan JavaScript (necesitarías Selenium)
-
-## 📝 Notas
-
-- SQLite se crea automáticamente
-- Los duplicados se ignoran (enlace UNIQUE)
-- Las fechas de scraping se guardan automáticamente
-
-## 📚 Recursos
-
-- [BeautifulSoup Docs](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
-- [Requests Docs](https://requests.readthedocs.io/)
-- [SQLite Docs](https://www.sqlite.org/docs.html)
+- Respeta robots.txt y terminos de uso del sitio origen.
+- Evita hacer demasiadas requests seguidas.
+- El scraper ya aplica User-Agent y pequenas pausas para reducir bloqueos.

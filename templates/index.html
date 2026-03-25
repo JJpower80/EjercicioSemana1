@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web News</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo.png') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: linear-gradient(135deg, #eef2ff 0%, #f8fafc 45%, #e0f2fe 100%);
+            --text-main: #0f172a;
+            --text-soft: #475569;
+            --card-bg: #ffffff;
+            --card-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+            --navbar-bg: rgba(15, 23, 42, 0.92);
+            --hero-bg: linear-gradient(135deg, #0f172a, #1d4ed8 60%, #38bdf8);
+            --meta-bg: #eff6ff;
+            --meta-text: #1d4ed8;
+            --meta-border: #dbeafe;
+            --empty-bg: rgba(255, 255, 255, 0.75);
+            --empty-border: #cbd5e1;
+            --footer-bg: rgba(255, 255, 255, 0.7);
+        }
+
+        html[data-theme="dark"] {
+            --bg-main: linear-gradient(135deg, #020617 0%, #0f172a 45%, #111827 100%);
+            --text-main: #e2e8f0;
+            --text-soft: #94a3b8;
+            --card-bg: #111827;
+            --card-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+            --navbar-bg: rgba(2, 6, 23, 0.95);
+            --hero-bg: linear-gradient(135deg, #020617, #1e3a8a 60%, #0ea5e9);
+            --meta-bg: #1e293b;
+            --meta-text: #93c5fd;
+            --meta-border: #334155;
+            --empty-bg: rgba(17, 24, 39, 0.9);
+            --empty-border: #334155;
+            --footer-bg: rgba(15, 23, 42, 0.85);
+        }
+
+        body {
+            background: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+            transition: background 0.25s ease, color 0.25s ease;
+        }
+
+        .hero {
+            background: var(--hero-bg);
+            color: white;
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+        }
+
+        .hero-badge {
+            background-color: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+        }
+
+        .news-card {
+            border: 0;
+            border-radius: 1.25rem;
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.25s ease;
+            box-shadow: var(--card-shadow);
+            background: var(--card-bg);
+        }
+
+        .news-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+        }
+
+        .news-card .card-body {
+            padding: 1.4rem;
+        }
+
+        .news-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            line-height: 1.4;
+            color: var(--text-main);
+        }
+
+        .news-author {
+            color: #3b82f6;
+            font-weight: 600;
+            font-size: 0.92rem;
+        }
+
+        .news-desc,
+        .text-muted,
+        .small {
+            color: var(--text-soft) !important;
+        }
+
+        .meta-badge {
+            background: var(--meta-bg);
+            color: var(--meta-text);
+            border: 1px solid var(--meta-border);
+            border-radius: 999px;
+            padding: 0.35rem 0.7rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .section-title {
+            color: var(--text-main);
+            font-weight: 800;
+        }
+
+        .custom-btn {
+            border-radius: 999px;
+            padding: 0.75rem 1.2rem;
+            font-weight: 600;
+        }
+
+        .navbar {
+            backdrop-filter: blur(10px);
+            background: var(--navbar-bg) !important;
+        }
+
+        .empty-state {
+            border-radius: 1.25rem;
+            border: 1px dashed var(--empty-border);
+            background: var(--empty-bg);
+        }
+
+        .theme-toggle {
+            border-radius: 999px;
+        }
+
+        .site-footer {
+            background: var(--footer-bg);
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            backdrop-filter: blur(8px);
+        }
+
+        .credit-link {
+            color: inherit;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .credit-link:hover {
+            text-decoration: underline;
+        }
+
+        .brand-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            border-radius: 0.75rem;
+            background: rgba(255, 255, 255, 0.12);
+            padding: 0.2rem;
+        }
+
+        .hero-logo {
+            width: 84px;
+            height: 84px;
+            object-fit: contain;
+            border-radius: 1rem;
+            background: rgba(255, 255, 255, 0.12);
+            padding: 0.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .footer-logo {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+            border-radius: 0.9rem;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 0.3rem;
+        }
+
+        .footer-brand {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand fw-bold brand-wrap" href="/">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo Web News" class="brand-logo">
+                <span>Web News</span>
+            </a>
+            <button id="themeToggle" class="btn btn-outline-light btn-sm theme-toggle">
+                🌙 Modo oscuro
+            </button>
+        </div>
+    </nav>
+
+    <main class="container py-4 py-lg-5">
+
+        <section class="hero mb-5">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo Web News" class="hero-logo">
+                        <span class="badge rounded-pill hero-badge px-3 py-2">
+                            Scraping + SQLite + Flask + Bootstrap
+                        </span>
+                    </div>
+
+                    <h1 class="display-5 fw-bold mb-3">Panel de noticias extraídas</h1>
+                    <p class="lead mb-0">
+                        Visualización moderna de noticias almacenadas en base de datos.
+                    </p>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="bg-white bg-opacity-10 rounded-4 p-4 text-center">
+                        <div class="text-uppercase small fw-semibold opacity-75 mb-2">Noticias guardadas</div>
+                        <div class="display-4 fw-bold">{{ total }}</div>
+                        <form action="{{ url_for('actualizar') }}" method="post" class="mt-3">
+                            <button class="btn btn-light text-primary custom-btn w-100">
+                                Actualizar scraping
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <section class="mb-4">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm rounded-4" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        {% endwith %}
+
+        <section class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h2 class="section-title h3 mb-1">Últimas noticias</h2>
+                <p class="text-muted mb-0">Resumen visual de las noticias obtenidas por el scraper.</p>
+            </div>
+            <span class="meta-badge">Mostrando hasta 20 resultados</span>
+        </section>
+
+        <section class="row g-4">
+            {% for noticia in noticias %}
+                <div class="col-md-6 col-xl-4">
+                    <article class="card news-card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                                <span class="badge rounded-pill text-bg-primary">Noticia</span>
+                                {% if noticia.fecha_publicacion %}
+                                    <span class="text-muted small">{{ noticia.fecha_publicacion }}</span>
+                                {% endif %}
+                            </div>
+
+                            <h3 class="news-title mb-2">{{ noticia.titulo }}</h3>
+
+                            <div class="news-author mb-3">
+                                {{ noticia.autor }}
+                            </div>
+
+                            <p class="news-desc flex-grow-1 mb-4">
+                                {{ noticia.descripcion_limpia }}
+                            </p>
+
+                            <div class="d-flex justify-content-between align-items-center mt-auto">
+                                <small class="text-muted">Fuente externa</small>
+                                <a href="{{ noticia.enlace }}" target="_blank" class="btn btn-outline-primary custom-btn btn-sm">
+                                    Leer más
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            {% else %}
+                <div class="col-12">
+                    <div class="empty-state p-5 text-center shadow-sm">
+                        <h3 class="h4 mb-2">No hay noticias disponibles</h3>
+                        <p class="text-muted mb-4">Todavía no se han guardado noticias en la base de datos.</p>
+                        <form action="{{ url_for('actualizar') }}" method="post">
+                            <button class="btn btn-primary custom-btn">
+                                Ejecutar scraping ahora
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </section>
+
+    </main>
+
+    <footer class="site-footer mt-5 py-4">
+        <div class="container text-center">
+            <div class="footer-brand">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo Web News" class="footer-logo">
+                <strong>Web News</strong>
+            </div>
+            <p class="mb-1">
+                Proyecto académico de scraping y visualización de noticias.
+            </p>
+            <p class="mb-0 text-muted">
+                Fuente de noticias:
+                <a class="credit-link" href="https://www.diariosur.es/" target="_blank" rel="noopener noreferrer">
+                    Diario Sur de Málaga
+                </a>
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        const root = document.documentElement;
+        const themeToggle = document.getElementById("themeToggle");
+        const savedTheme = localStorage.getItem("theme") || "light";
+
+        function applyTheme(theme) {
+            root.setAttribute("data-theme", theme);
+            themeToggle.textContent = theme === "dark" ? "☀️ Modo claro" : "🌙 Modo oscuro";
+            localStorage.setItem("theme", theme);
+        }
+
+        applyTheme(savedTheme);
+
+        themeToggle.addEventListener("click", () => {
+            const currentTheme = root.getAttribute("data-theme");
+            applyTheme(currentTheme === "dark" ? "light" : "dark");
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
