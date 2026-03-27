@@ -25,6 +25,69 @@ class WebScraper:
     def parsear_html(self, html):
         """Parsea HTML con BeautifulSoup"""
         return BeautifulSoup(html, 'html.parser')
+
+    def _obtener_meta_contenido(self, soup, candidatos):
+        """Devuelve el contenido del primer meta tag que coincida"""
+        for attrs in candidatos:
+            meta = soup.find('meta', attrs=attrs)
+            if meta:
+                contenido = (meta.get('content') or '').strip()
+                if contenido:
+                    return contenido
+        return None
+
+    def _extraer_detalle_noticia(self, url_noticia):
+        """Extrae autor, fecha y descripcion desde la pagina de detalle"""
+        html = self.obtener_html(url_noticia)
+        if not html:
+            return None, None, None
+
+        soup = self.parsear_html(html)
+
+        autor = self._obtener_meta_contenido(soup, [
+            {'name': 'author'},
+            {'property': 'article:author'},
+            {'name': 'parsely-author'},
+            {'name': 'twitter:creator'}
+        ])
+
+        if not autor:
+            autor_elem = (
+                soup.select_one('a[rel="author"]')
+                or soup.select_one('[itemprop="author"]')
+                or soup.select_one('.author')
+                or soup.select_one('.article-author')
+            )
+            if autor_elem:
+                autor = autor_elem.get_text(strip=True)
+
+        fecha_publicacion = self._obtener_meta_contenido(soup, [
+            {'property': 'article:published_time'},
+            {'property': 'og:published_time'},
+            {'name': 'pubdate'},
+            {'name': 'date'}
+        ])
+
+        if not fecha_publicacion:
+            time_elem = soup.find('time')
+            if time_elem:
+                fecha_publicacion = time_elem.get('datetime') or time_elem.get_text(strip=True)
+
+        descripcion = self._obtener_meta_contenido(soup, [
+            {'name': 'description'},
+            {'property': 'og:description'}
+        ])
+
+        if not descripcion:
+            parrafo = (
+                soup.select_one('article p')
+                or soup.select_one('main p')
+                or soup.find('p')
+            )
+            if parrafo:
+                descripcion = parrafo.get_text(strip=True)
+
+        return autor, fecha_publicacion, descripcion
     
     def extraer_noticias_bbc(self, url='https://www.bbc.com/news'):
         """Ejemplo: extrae noticias de BBC News"""
@@ -78,6 +141,8 @@ class WebScraper:
         # Buscar todos los enlaces que parecen ser noticias
         enlaces_noticias = soup.find_all('a', href=lambda href: href and '-nt.html' in href)
         
+        noticias_actualizadas = 0
+
         for enlace in enlaces_noticias[:5]:
             try:
                 titulo = enlace.get_text(strip=True)
@@ -151,6 +216,16 @@ class WebScraper:
                             if parrafo:
                                 descripcion = parrafo.get_text(strip=True)
                 
+                # Completar datos desde la noticia completa para mejorar cobertura
+                autor_detalle, fecha_detalle, descripcion_detalle = self._extraer_detalle_noticia(url_noticia)
+
+                if (not autor or autor == "Sin autor") and autor_detalle:
+                    autor = autor_detalle
+                if not fecha_publicacion and fecha_detalle:
+                    fecha_publicacion = fecha_detalle
+                if (not descripcion or descripcion == "Sin descripción") and descripcion_detalle:
+                    descripcion = descripcion_detalle
+
                 # Establecer valores por defecto
                 autor = autor or "Sin autor"
                 descripcion = descripcion or "Sin descripción"
@@ -167,26 +242,32 @@ class WebScraper:
                 info_completa = f"{autor}|||{descripcion}"
                 
                 # Insertar en BD
-                noticia_id = self.db.insertar_noticia(
+                resultado = self.db.guardar_o_actualizar_noticia(
                     titulo=titulo,
                     descripcion=info_completa,
                     enlace=url_noticia,
                     fecha_publicacion=fecha_publicacion
                 )
                 
-                if noticia_id:
+                if resultado.get("insertado"):
                     print(f"  ✓ {titulo[:50]}...")
                     if autor != "Sin autor":
                         print(f"    👤 {autor}")
                     if fecha_publicacion:
                         print(f"    📅 {fecha_publicacion}")
                     noticias_agregadas += 1
+                elif resultado.get("actualizado"):
+                    print(f"  ↻ Actualizada: {titulo[:50]}...")
+                    noticias_actualizadas += 1
                         
             except Exception as e:
                 print(f"  ✗ Error procesando artículo: {e}")
             
             time.sleep(0.3)
         
+        if noticias_actualizadas:
+            print(f"  ℹ Noticias actualizadas con mas datos: {noticias_actualizadas}")
+
         return noticias_agregadas
     
     def extraer_noticias_personalizado(self, url, selectores):

@@ -55,6 +55,74 @@ class DatabaseManager:
             return None
         finally:
             conexion.close()
+
+    def guardar_o_actualizar_noticia(self, titulo, descripcion, enlace, fecha_publicacion=None):
+        """Inserta una noticia o actualiza campos faltantes si ya existe por enlace"""
+        try:
+            conexion = sqlite3.connect(self.db_name)
+            cursor = conexion.cursor()
+
+            cursor.execute(
+                '''
+                SELECT id, titulo, descripcion, fecha_publicacion
+                FROM noticias
+                WHERE enlace = ?
+                ''',
+                (enlace,)
+            )
+            existente = cursor.fetchone()
+
+            if not existente:
+                cursor.execute(
+                    '''
+                    INSERT INTO noticias (titulo, descripcion, enlace, fecha_publicacion)
+                    VALUES (?, ?, ?, ?)
+                    ''',
+                    (titulo, descripcion, enlace, fecha_publicacion)
+                )
+                conexion.commit()
+                return {"id": cursor.lastrowid, "insertado": True, "actualizado": False}
+
+            noticia_id, titulo_actual, descripcion_actual, fecha_actual = existente
+
+            nuevo_titulo = titulo or titulo_actual
+            nueva_descripcion = descripcion_actual
+            nueva_fecha = fecha_actual
+
+            if descripcion and (
+                not descripcion_actual
+                or descripcion_actual.startswith("Sin autor|||")
+                or "|||Sin descripción" in descripcion_actual
+            ):
+                nueva_descripcion = descripcion
+
+            if fecha_publicacion and not fecha_actual:
+                nueva_fecha = fecha_publicacion
+
+            hay_cambios = (
+                nuevo_titulo != titulo_actual
+                or nueva_descripcion != descripcion_actual
+                or nueva_fecha != fecha_actual
+            )
+
+            if hay_cambios:
+                cursor.execute(
+                    '''
+                    UPDATE noticias
+                    SET titulo = ?, descripcion = ?, fecha_publicacion = ?
+                    WHERE id = ?
+                    ''',
+                    (nuevo_titulo, nueva_descripcion, nueva_fecha, noticia_id)
+                )
+                conexion.commit()
+
+            return {"id": noticia_id, "insertado": False, "actualizado": hay_cambios}
+
+        except sqlite3.Error as e:
+            print(f"✗ Error al guardar o actualizar: {e}")
+            return {"id": None, "insertado": False, "actualizado": False}
+        finally:
+            conexion.close()
     
     def obtener_noticias(self, limite=10):
         """Obtiene las últimas noticias de la base de datos"""
